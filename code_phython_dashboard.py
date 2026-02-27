@@ -1,177 +1,139 @@
-{
-  "nbformat": 4,
-  "nbformat_minor": 0,
-  "metadata": {
-    "colab": {
-      "provenance": [],
-      "authorship_tag": "ABX9TyPhfKBBb3NqNudx2himgCVu",
-      "include_colab_link": true
+# =====================================================
+# DASHBOARD ANALISIS SOAL - GOOGLE COLAB VERSION
+# =====================================================
+
+# Install library (jika belum ada)
+!pip install plotly openpyxl scikit-learn --quiet
+
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from google.colab import files
+import io
+
+# ============================
+# UPLOAD FILE
+# ============================
+print("Silakan upload file Excel Anda")
+uploaded = files.upload()
+
+file_name = list(uploaded.keys())[0]
+df = pd.read_excel(io.BytesIO(uploaded[file_name]))
+
+data = df.select_dtypes(include=np.number)
+
+print("\n===== STATISTIK UMUM =====")
+print("Jumlah Siswa :", len(df))
+print("Jumlah Soal  :", data.shape[1])
+print("Rata-rata Kelas :", round(data.mean().mean(),2))
+
+# ============================
+# DISTRIBUSI NILAI TOTAL
+# ============================
+df["Total_Nilai"] = data.sum(axis=1)
+
+fig1 = px.histogram(
+    df,
+    x="Total_Nilai",
+    nbins=10,
+    title="Distribusi Total Nilai Siswa",
+    color_discrete_sequence=["#1E3A8A"]
+)
+
+fig1.update_layout(template="plotly_white")
+fig1.show()
+
+# ============================
+# ANALISIS INDEKS KESUKARAN
+# ============================
+mean_per_soal = data.mean()
+
+def kategori_kesukaran(x):
+    if x >= 0.80:
+        return "Sangat Mudah"
+    elif x >= 0.60:
+        return "Mudah"
+    elif x >= 0.40:
+        return "Sedang"
+    elif x >= 0.20:
+        return "Sulit"
+    else:
+        return "Sangat Sulit"
+
+indeks_df = pd.DataFrame({
+    "Soal": mean_per_soal.index,
+    "Indeks Kesukaran": mean_per_soal.values,
+    "Kategori": mean_per_soal.apply(kategori_kesukaran).values
+}).sort_values("Indeks Kesukaran")
+
+print("\n===== INDEKS KESUKARAN =====")
+display(indeks_df)
+
+fig2 = px.bar(
+    indeks_df,
+    x="Soal",
+    y="Indeks Kesukaran",
+    color="Kategori",
+    color_discrete_map={
+        "Sangat Mudah": "#16A34A",
+        "Mudah": "#22C55E",
+        "Sedang": "#EAB308",
+        "Sulit": "#F97316",
+        "Sangat Sulit": "#DC2626"
     },
-    "kernelspec": {
-      "name": "python3",
-      "display_name": "Python 3"
-    },
-    "language_info": {
-      "name": "python"
-    }
-  },
-  "cells": [
-    {
-      "cell_type": "markdown",
-      "metadata": {
-        "id": "view-in-github",
-        "colab_type": "text"
-      },
-      "source": [
-        "<a href=\"https://colab.research.google.com/github/regitaaajuairianiii-bit/fiskomdatatugas5/blob/main/code_phython_dashboard.py\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "source": [
-        "# =====================================================\n",
-        "# DASHBOARD ANALISIS SOAL - GOOGLE COLAB VERSION\n",
-        "# =====================================================\n",
-        "\n",
-        "\n",
-        "import pandas as pd\n",
-        "import numpy as np\n",
-        "import plotly.express as px\n",
-        "import plotly.graph_objects as go\n",
-        "from sklearn.cluster import KMeans\n",
-        "from sklearn.preprocessing import StandardScaler\n",
-        "from google.colab import files\n",
-        "import io\n",
-        "\n",
-        "# ============================\n",
-        "# UPLOAD FILE\n",
-        "# ============================\n",
-        "print(\"Silakan upload file Excel Anda\")\n",
-        "uploaded = files.upload()\n",
-        "\n",
-        "file_name = list(uploaded.keys())[0]\n",
-        "df = pd.read_excel(io.BytesIO(uploaded[file_name]))\n",
-        "\n",
-        "data = df.select_dtypes(include=np.number)\n",
-        "\n",
-        "print(\"\\n===== STATISTIK UMUM =====\")\n",
-        "print(\"Jumlah Siswa :\", len(df))\n",
-        "print(\"Jumlah Soal  :\", data.shape[1])\n",
-        "print(\"Rata-rata Kelas :\", round(data.mean().mean(),2))\n",
-        "\n",
-        "# ============================\n",
-        "# DISTRIBUSI NILAI TOTAL\n",
-        "# ============================\n",
-        "df[\"Total_Nilai\"] = data.sum(axis=1)\n",
-        "\n",
-        "fig1 = px.histogram(\n",
-        "    df,\n",
-        "    x=\"Total_Nilai\",\n",
-        "    nbins=10,\n",
-        "    title=\"Distribusi Total Nilai Siswa\",\n",
-        "    color_discrete_sequence=[\"#1E3A8A\"]\n",
-        ")\n",
-        "\n",
-        "fig1.update_layout(template=\"plotly_white\")\n",
-        "fig1.show()\n",
-        "\n",
-        "# ============================\n",
-        "# ANALISIS INDEKS KESUKARAN\n",
-        "# ============================\n",
-        "mean_per_soal = data.mean()\n",
-        "\n",
-        "def kategori_kesukaran(x):\n",
-        "    if x >= 0.80:\n",
-        "        return \"Sangat Mudah\"\n",
-        "    elif x >= 0.60:\n",
-        "        return \"Mudah\"\n",
-        "    elif x >= 0.40:\n",
-        "        return \"Sedang\"\n",
-        "    elif x >= 0.20:\n",
-        "        return \"Sulit\"\n",
-        "    else:\n",
-        "        return \"Sangat Sulit\"\n",
-        "\n",
-        "indeks_df = pd.DataFrame({\n",
-        "    \"Soal\": mean_per_soal.index,\n",
-        "    \"Indeks Kesukaran\": mean_per_soal.values,\n",
-        "    \"Kategori\": mean_per_soal.apply(kategori_kesukaran).values\n",
-        "}).sort_values(\"Indeks Kesukaran\")\n",
-        "\n",
-        "print(\"\\n===== INDEKS KESUKARAN =====\")\n",
-        "display(indeks_df)\n",
-        "\n",
-        "fig2 = px.bar(\n",
-        "    indeks_df,\n",
-        "    x=\"Soal\",\n",
-        "    y=\"Indeks Kesukaran\",\n",
-        "    color=\"Kategori\",\n",
-        "    color_discrete_map={\n",
-        "        \"Sangat Mudah\": \"#16A34A\",\n",
-        "        \"Mudah\": \"#22C55E\",\n",
-        "        \"Sedang\": \"#EAB308\",\n",
-        "        \"Sulit\": \"#F97316\",\n",
-        "        \"Sangat Sulit\": \"#DC2626\"\n",
-        "    },\n",
-        "    title=\"Tingkat Kesukaran Soal\"\n",
-        ")\n",
-        "\n",
-        "fig2.update_layout(template=\"plotly_white\")\n",
-        "fig2.show()\n",
-        "\n",
-        "# ============================\n",
-        "# RADAR CHART KOMPETENSI\n",
-        "# ============================\n",
-        "fig3 = go.Figure()\n",
-        "\n",
-        "fig3.add_trace(go.Scatterpolar(\n",
-        "    r=mean_per_soal.values,\n",
-        "    theta=mean_per_soal.index,\n",
-        "    fill='toself',\n",
-        "    line=dict(color=\"#1E3A8A\")\n",
-        "))\n",
-        "\n",
-        "fig3.update_layout(\n",
-        "    title=\"Radar Chart Kompetensi\",\n",
-        "    polar=dict(radialaxis=dict(visible=True, range=[0,1])),\n",
-        "    showlegend=False,\n",
-        "    template=\"plotly_white\"\n",
-        ")\n",
-        "\n",
-        "fig3.show()\n",
-        "\n",
-        "# ============================\n",
-        "# CLUSTERING SISWA\n",
-        "# ============================\n",
-        "scaler = StandardScaler()\n",
-        "X_scaled = scaler.fit_transform(data)\n",
-        "\n",
-        "kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)\n",
-        "df[\"Cluster\"] = kmeans.fit_predict(X_scaled)\n",
-        "\n",
-        "fig4 = px.scatter(\n",
-        "    df,\n",
-        "    x=data.columns[0],\n",
-        "    y=data.columns[1],\n",
-        "    color=\"Cluster\",\n",
-        "    title=\"Segmentasi Siswa\",\n",
-        "    color_continuous_scale=\"viridis\"\n",
-        ")\n",
-        "\n",
-        "fig4.update_layout(template=\"plotly_white\")\n",
-        "fig4.show()\n",
-        "\n",
-        "print(\"\\n===== INTERPRETASI =====\")\n",
-        "print(\"• Histogram → Melihat distribusi kemampuan siswa\")\n",
-        "print(\"• Indeks Kesukaran → Mengidentifikasi soal mudah/sulit\")\n",
-        "print(\"• Radar Chart → Visualisasi kekuatan & kelemahan kompetensi\")\n",
-        "print(\"• Clustering → Segmentasi siswa (rendah, sedang, tinggi)\")"
-      ],
-      "metadata": {
-        "id": "mSRy1TBD9_qX"
-      },
-      "execution_count": null,
-      "outputs": []
-    }
-  ]
-}
+    title="Tingkat Kesukaran Soal"
+)
+
+fig2.update_layout(template="plotly_white")
+fig2.show()
+
+# ============================
+# RADAR CHART KOMPETENSI
+# ============================
+fig3 = go.Figure()
+
+fig3.add_trace(go.Scatterpolar(
+    r=mean_per_soal.values,
+    theta=mean_per_soal.index,
+    fill='toself',
+    line=dict(color="#1E3A8A")
+))
+
+fig3.update_layout(
+    title="Radar Chart Kompetensi",
+    polar=dict(radialaxis=dict(visible=True, range=[0,1])),
+    showlegend=False,
+    template="plotly_white"
+)
+
+fig3.show()
+
+# ============================
+# CLUSTERING SISWA
+# ============================
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(data)
+
+kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
+df["Cluster"] = kmeans.fit_predict(X_scaled)
+
+fig4 = px.scatter(
+    df,
+    x=data.columns[0],
+    y=data.columns[1],
+    color="Cluster",
+    title="Segmentasi Siswa",
+    color_continuous_scale="viridis"
+)
+
+fig4.update_layout(template="plotly_white")
+fig4.show()
+
+print("\n===== INTERPRETASI =====")
+print("• Histogram → Melihat distribusi kemampuan siswa")
+print("• Indeks Kesukaran → Mengidentifikasi soal mudah/sulit")
+print("• Radar Chart → Visualisasi kekuatan & kelemahan kompetensi")
+print("• Clustering → Segmentasi siswa (rendah, sedang, tinggi)")
